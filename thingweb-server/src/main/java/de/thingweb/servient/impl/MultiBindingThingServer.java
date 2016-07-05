@@ -234,7 +234,7 @@ public class MultiBindingThingServer implements ThingServer {
             createBinding(binding, bindingIndex, thingModel,isProtected, thingurl);
 
             //update metadata
-            fullyFormedThingURIs.add(binding.getBase() + Defines.BASE_URL + thingurl);
+            fullyFormedThingURIs.add(binding.getBase() /* + Defines.BASE_URL + thingurl*/);
             bindingIndex++;
         }
         
@@ -268,7 +268,7 @@ public class MultiBindingThingServer implements ThingServer {
             final PropertyListener propertyListener = new PropertyListener(servedThing, property);
             if(isProtected) propertyListener.protectWith(getValidator());
             interactionListeners.put(url, propertyListener);
-           	property.getHrefs().add(index, "/" + url);
+           	property.getHrefs().add(index,  url);
         }
 
         // collect actions

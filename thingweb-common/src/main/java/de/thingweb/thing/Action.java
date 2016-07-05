@@ -45,6 +45,10 @@ public class Action extends Interaction {
     protected Action(String name, Map<String, String> params) {
         this(name, params.get("parm"), "", new ArrayList<String>());
     }
+    protected Action(String name, String inputType, String outputType, List<String> hrefs, String defaults) {
+    	this(name, inputType, outputType, hrefs);
+    	setDefaultParameters(defaults);
+    }
     
     protected Action(String name, String inputType, String outputType, List<String> hrefs) {
         this.params = new HashMap<>();
@@ -91,6 +95,7 @@ public class Action extends Interaction {
         private String inputType = "";
         private String outputType = "";
         private List<String> hrefs = new ArrayList<String>();
+        private String defaults = null;
 
         private Builder(String name) {
             this.name = name;
@@ -110,6 +115,11 @@ public class Action extends Interaction {
           this.hrefs = hrefs;
           return this;
         }
+        
+        public Builder setInputDefaults(String defaults) {
+            this.defaults = defaults;
+            return this;
+          }
 
         /**
          * add a parameter / input value to the action
@@ -130,12 +140,12 @@ public class Action extends Interaction {
          */
         public Action build() {
             if(params.size() == 0)
-                    return new Action(name,inputType,outputType, hrefs);
+                    return new Action(name,inputType,outputType, hrefs, defaults);
                else
                        return new Action(name,params);
         }
         public Event buildEvent() {
-        	return new Event(name,inputType,outputType, hrefs);
+        	return new Event(name,inputType,outputType, hrefs, defaults);
         }
     }
 }

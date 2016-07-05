@@ -140,10 +140,8 @@ public class WotCoapResource extends CoapResource implements  Observer{
     public void handleGET(CoapExchange exchange) {
         try {
             boolean hasObs = exchange.getRequestOptions().hasObserve();
-            System.out.println("Request says it has obs=" + hasObs);
             if(hasObs){
             	Integer obsVal = exchange.getRequestOptions().getObserve();
-            	System.out.println("Request says it has obsval =" + obsVal) ;
             	if(m_restListener instanceof PropertyListener)
             		((PropertyListener)m_restListener).setClientObservationState(obsVal == 0);
             }
@@ -219,7 +217,7 @@ public class WotCoapResource extends CoapResource implements  Observer{
 
     @Override
     public void update(Observable o, Object arg) {
-        LOGGER.info("change detected: " + o + " to " + arg);
+        //LOGGER.info("change detected: " + o + " to " + arg);
         this.changed();
     }
 }

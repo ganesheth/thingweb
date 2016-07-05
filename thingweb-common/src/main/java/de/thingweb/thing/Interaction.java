@@ -10,20 +10,27 @@ public class Interaction extends Observable {
 
 	private Metadata m_metadata = new Metadata();
 	private Object m_tag;
+	private String defaultParameters;
 	
 	
 	public Metadata getMetadata(){
 		return m_metadata;
 	}
 
-
 	public Object getTag() {
 		return m_tag;
 	}
 
-
 	public void setTag(Object m_tag) {
 		this.m_tag = m_tag;
+	}
+
+	public String getDefaultParameters() {
+		return defaultParameters;
+	}
+
+	public void setDefaultParameters(String defaultParameters) {
+		this.defaultParameters = defaultParameters;
 	}
 	
 	

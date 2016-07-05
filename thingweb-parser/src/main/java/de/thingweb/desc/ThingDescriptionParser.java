@@ -228,7 +228,8 @@ public class ThingDescriptionParser
       ObjectNode p = factory.objectNode();
       p.put("name", prop.getName());
       p.put("writable", prop.isWritable());
-      p.put("observable", prop.isObservable());
+      if(prop.isObservable())
+    	  p.put("observable", prop.isObservable());
       p.put("valueType", prop.getValueType());
 
       if (prop.getHrefs().size() > 1) {
@@ -265,19 +266,22 @@ public class ThingDescriptionParser
 
     ArrayNode actions = factory.arrayNode();
     for (Action action : thing.getActions()) {
-      ObjectNode a = factory.objectNode();
-      a.put("name", action.getName());
+      ObjectNode actionNode = factory.objectNode();
+      actionNode.put("name", action.getName());
 
       if (!action.getInputType().isEmpty()) {
         ObjectNode in = factory.objectNode();
         in.put("valueType", action.getInputType());
-        a.put("inputData", in);
+        if(action.getDefaultParameters() != null){
+        	in.put("defaults", action.getDefaultParameters());
+        }
+        actionNode.put("inputData", in);
       }
 
       if (!action.getOutputType().isEmpty()) {
         ObjectNode out = factory.objectNode();
         out.put("valueType", action.getOutputType());
-        a.put("outputData", out);
+        actionNode.put("outputData", out);
       }
 
       if (action.getHrefs().size() > 1) {
@@ -285,12 +289,12 @@ public class ThingDescriptionParser
         for (String href : action.getHrefs()) {
           hrefs.add(href);
         }
-        a.put("hrefs", hrefs);
+        actionNode.put("hrefs", hrefs);
       } else if (action.getHrefs().size() == 1) {
-        a.put("hrefs", factory.textNode(action.getHrefs().get(0)));
+        actionNode.put("hrefs", factory.textNode(action.getHrefs().get(0)));
       }
       if(action.getMetadata().getAssociations().size() > 0)
-    	  a.putPOJO("associations", action.getMetadata().getAssociations());
+    	  actionNode.putPOJO("associations", action.getMetadata().getAssociations());
       
       Metadata actionMetadata = action.getMetadata();
       Map<String, List<String>> actionMetaItems = actionMetadata.getItems();
@@ -300,28 +304,31 @@ public class ThingDescriptionParser
           for (String e : action.getMetadata().getAll(key)) {
           	metadataElement.add(e);
           }
-          a.put(key, metadataElement);
+          actionNode.put(key, metadataElement);
       }
       
-      actions.add(a);
+      actions.add(actionNode);
     }
     td.put("actions", actions);
 
     ArrayNode events = factory.arrayNode();
     for (Event event : thing.getEvents()) {
-      ObjectNode n = factory.objectNode();
-      n.put("name", event.getName());
+      ObjectNode eventNode = factory.objectNode();
+      eventNode.put("name", event.getName());
 
       if (!event.getInputType().isEmpty()) {
-        ObjectNode in = factory.objectNode();
-        in.put("inputType", event.getInputType());
-        n.put("inputData", in);
-      }
+          ObjectNode in = factory.objectNode();
+          in.put("valueType", event.getInputType());
+          if(event.getDefaultParameters() != null){
+          	in.put("defaults", event.getDefaultParameters());
+          }
+          eventNode.put("inputData", in);
+        }
       
       if (!event.getOutputType().isEmpty()) {
           ObjectNode out = factory.objectNode();
           out.put("valueType", event.getOutputType());
-          n.put("outputData", out);
+          eventNode.put("outputData", out);
         }      
 
       if (event.getHrefs().size() > 1) {
@@ -329,12 +336,12 @@ public class ThingDescriptionParser
         for (String href : event.getHrefs()) {
           hrefs.add(href);
         }
-        n.put("hrefs", hrefs);
+        eventNode.put("hrefs", hrefs);
       } else if (event.getHrefs().size() == 1) {
-        n.put("hrefs", factory.textNode(event.getHrefs().get(0)));
+        eventNode.put("hrefs", factory.textNode(event.getHrefs().get(0)));
       }
 
-      events.add(n);
+      events.add(eventNode);
     }
     td.put("events", events);
 
@@ -433,6 +440,8 @@ public class ThingDescriptionParser
               switch (s) {
                 case "inputData":
                   builder.setInputType(action.get("inputData").get("valueType").asText());
+                  if(action.get("inputData").has("defaults"))
+                	  builder.setInputDefaults(action.get("inputData").get("defaults").asText());
                   break;
                 case "outputData":
                   builder.setOutputType(action.get("outputData").get("valueType").asText());
@@ -462,6 +471,8 @@ public class ThingDescriptionParser
                   switch (s) {
                   case "inputData":
                       builder.setInputType(event.get("inputData").get("valueType").asText());
+                      if(event.get("inputData").has("defaults"))
+                    	  builder.setInputDefaults(event.get("inputData").get("defaults").toString());
                       break;
                     case "outputData":
                       builder.setOutputType(event.get("outputData").get("valueType").asText());
