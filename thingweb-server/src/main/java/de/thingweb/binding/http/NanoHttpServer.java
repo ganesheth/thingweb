@@ -122,6 +122,9 @@ public class NanoHttpServer extends NanoHTTPD  implements ResourceBuilder {
 			    			res.addHeader(header.getKey(), header.getValue());
 			    		}
 			    	}
+			    	res.addHeader("Access-Control-Allow-Headers", "Content-Type");
+			    	res.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+			    	res.addHeader("Access-Control-Allow-Origin", "*");
 					break;
 			    case PUT:
 			        listener.onPut(getPayload(session));

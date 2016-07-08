@@ -205,7 +205,12 @@ public class MultiBindingThingServer implements ThingServer {
                 final ObjectNode response = jsonNodeFactory.objectNode();
                 things.forEach(
                         (name, thing) -> {
-                                response.put(name, ThingDescriptionParser.toJsonObject(thing.getThingModel()));
+                                try {
+									response.put(name, ThingDescriptionParser.toJsonObject(thing.getThingModel()));
+								} catch (Exception e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
                         }
                 );
                 return ContentHelper.wrap(response, MediaType.APPLICATION_JSON);
@@ -234,7 +239,7 @@ public class MultiBindingThingServer implements ThingServer {
             createBinding(binding, bindingIndex, thingModel,isProtected, thingurl);
 
             //update metadata
-            fullyFormedThingURIs.add(binding.getBase() /* + Defines.BASE_URL + thingurl*/);
+            fullyFormedThingURIs.add(binding.getBase()  + Defines.BASE_URL + thingurl);
             bindingIndex++;
         }
         
@@ -263,12 +268,14 @@ public class MultiBindingThingServer implements ThingServer {
             String url = thingurl + "/" + urlize(property.getName());
             
             if(property.getHrefs().size() > index)
-            	url = thingurl + "/" + property.getHrefs().remove(index); 
+            	url = thingurl + "/" + property.getHrefs().get(index)/*.remove(index)*/;
+            else
+            	property.getHrefs().add(urlize(property.getName()));
 
             final PropertyListener propertyListener = new PropertyListener(servedThing, property);
             if(isProtected) propertyListener.protectWith(getValidator());
             interactionListeners.put(url, propertyListener);
-           	property.getHrefs().add(index,  url);
+           	//property.getHrefs().add(index,  url);
         }
 
         // collect actions
@@ -276,12 +283,14 @@ public class MultiBindingThingServer implements ThingServer {
             String url = thingurl + "/" + action.getName();
             
             if(action.getHrefs().size() > index)
-            	url = thingurl + "/" + action.getHrefs().remove(index); 
+            	url = thingurl + "/" + action.getHrefs().get(index)/*.remove(index)*/;
+            else
+            	action.getHrefs().add(action.getName());
             
             final ActionListener actionListener = new ActionListener(servedThing, action);
             if(isProtected) actionListener.protectWith(getValidator());
             interactionListeners.put(url, actionListener);
-            action.getHrefs().add(index, "/" + url);
+            //action.getHrefs().add(index, "/" + url);
 
         }
         
@@ -289,12 +298,14 @@ public class MultiBindingThingServer implements ThingServer {
         for (Event event : thingModel.getEvents()) {
             String url = thingurl + "/" + event.getName();
             if(event.getHrefs().size() > index)
-            	url = thingurl + "/" + event.getHrefs().remove(index); 
+            	url = thingurl + "/" + event.getHrefs().get(index)/*.remove(index)*/; 
+            else
+            	event.getHrefs().add(event.getName());
             
             final ActionListener actionListener = new ActionListener(servedThing, event);
             if(isProtected) actionListener.protectWith(getValidator());
             interactionListeners.put(url, actionListener);
-            event.getHrefs().add(index, "/" + url);
+            //event.getHrefs().add(index, "/" + url);
         }
 
         //add listener for thing description
@@ -321,22 +332,25 @@ public class MultiBindingThingServer implements ThingServer {
 
         // collect properties
         for (Property property : thingModel.getProperties()) {
-            //String url = thingurl + "/" + property.getName();
-        	String url = property.getHrefs().get(bindingIndex);
+            String url = thingurl + "/" +  urlize(property.getName());            
+            if(property.getHrefs().size() > bindingIndex)
+            	url = thingurl + "/" + property.getHrefs().get(bindingIndex);
             interactionListeners.put(url, null);
         }
 
         // collect actions
         for (Action action : thingModel.getActions()) {
-            //final String url = thingurl + "/" + action.getName();
-        	String url = action.getHrefs().get(bindingIndex);
+            String url = thingurl + "/" +  urlize(action.getName());
+            if(action.getHrefs().size() > bindingIndex)
+            	url = thingurl + "/" + action.getHrefs().get(bindingIndex);
             interactionListeners.put(url, null);
         }
         
         // collect events
-        for (Event action : thingModel.getEvents()) {
-            //final String url = thingurl + "/" + action.getName();
-        	String url = action.getHrefs().get(bindingIndex);
+        for (Event event : thingModel.getEvents()) {
+            String url = thingurl + "/" +  urlize(event.getName());
+        	if(event.getHrefs().size() > bindingIndex)
+        		url = thingurl + "/" + event.getHrefs().get(bindingIndex);
             interactionListeners.put(url, null);
         }
 

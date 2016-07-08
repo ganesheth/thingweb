@@ -117,6 +117,8 @@ public class CoapBinding implements Binding {
                 String lastPart = parts[parts.length - 1];
                 Resource existing = current.getChild(lastPart);
                 
+                if(existing == null)
+                	return;
                 while(true){
                 	Resource parent = existing.getParent();
                 	parent.remove(existing);

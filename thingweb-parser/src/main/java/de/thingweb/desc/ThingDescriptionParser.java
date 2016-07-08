@@ -45,11 +45,13 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -173,143 +175,124 @@ public class ThingDescriptionParser
   }
 
   // TODO set as private (and check it is not called elsewhere)
-  public static ObjectNode toJsonObject(Thing thing) {
+  public static ObjectNode toJsonObject(Thing thing) throws JsonProcessingException, IOException {
     JsonNodeFactory factory = new JsonNodeFactory(false);
-    ArrayNode contexts = factory.arrayNode();
+    ObjectMapper mapper = new ObjectMapper();
+    //ArrayNode contexts = factory.arrayNode();
     
-    ObjectNode td = factory.objectNode();
+    ObjectNode thingNode = factory.objectNode();
+    ArrayNode contextsNode = thingNode.putArray("@context");
     //td.put("@context", WOT_TD_CONTEXT);
     
     List<String> additionalContexts = thing.getMetadata().getAll(ThingMetadata.METADATA_ELEMENT_CONTEXT);
-    if(!additionalContexts.contains(WOT_TD_CONTEXT))
-    	contexts.add(WOT_TD_CONTEXT);
+
+    //if(!additionalContexts.contains(WOT_TD_CONTEXT))
+    //	contextsNode.add(new TextNode(WOT_TD_CONTEXT));
     for(String context : additionalContexts){
-	    contexts.add(context);
+    	try{    		
+    		JsonNode contextNode = mapper.readTree(context);
+    		contextsNode.add(contextNode);
+    	}catch(Exception e){}
     }
-    td.put("@context", contexts);
-    td.put("name", thing.getName());
+    thingNode.put("name", thing.getName());
     if(thing.getMetadata().getAssociations().size() > 0)
-    	td.putPOJO("associations", thing.getMetadata().getAssociations());
+    	thingNode.putPOJO("associations", thing.getMetadata().getAssociations());
     
     Metadata metadata = thing.getMetadata();
     Map<String, List<String>> metadataItems = metadata.getItems();
     
     for(String key : metadataItems.keySet()){
+    	if(key == ThingMetadata.METADATA_ELEMENT_CONTEXT)
+    		continue;
+    	
     	if(thing.getMetadata().getAll(key).size() > 1){
-	    	ArrayNode metadataElement = factory.arrayNode();
+	    	ArrayNode metadataNode = thingNode.putArray(key);
 	        for (String e : thing.getMetadata().getAll(key)) {
-	        	metadataElement.add(e);
+	    		//JsonNode m = mapper.readTree(e);
+	    		metadataNode.add(e);
 	        }
-	        td.put(key, metadataElement);
     	} else if (thing.getMetadata().getAll(key).size() == 1){
-    		td.put(key, thing.getMetadata().getAll(key).get(0));
+    		thingNode.put(key, thing.getMetadata().getAll(key).get(0));
     	}
     }
-/*
-    if (thing.getMetadata().contains("encodings")) {
-      ArrayNode encodings = factory.arrayNode();
-      for (String e : thing.getMetadata().getAll("encodings")) {
-        encodings.add(e);
-      }
-      td.put("encodings", encodings);
-    }
 
-    if (thing.getMetadata().contains("uris")) {
-      ArrayNode uris = factory.arrayNode();
-      for (String uri : thing.getMetadata().getAll("uris")) {
-        uris.add(uri);
-      }
-      // TODO array even if single value?
-      td.put("uris", uris);
-    }
-*/
-    ArrayNode properties = factory.arrayNode();
+    ArrayNode propertiesNode = thingNode.putArray("properties");
     for (Property prop : thing.getProperties()) {
-      ObjectNode p = factory.objectNode();
-      p.put("name", prop.getName());
-      p.put("writable", prop.isWritable());
+      ObjectNode propertyNode = propertiesNode.objectNode();// factory.objectNode();
+      propertyNode.put("name", prop.getName());
+      propertyNode.put("writable", prop.isWritable());
       if(prop.isObservable())
-    	  p.put("observable", prop.isObservable());
-      p.put("valueType", prop.getValueType());
+    	  propertyNode.put("observable", prop.isObservable());
+      JsonNode valueTypeNode = mapper.readTree( prop.getValueType());
+      propertyNode.set("valueType", valueTypeNode);
 
       if (prop.getHrefs().size() > 1) {
-        ArrayNode hrefs = factory.arrayNode();
+        ArrayNode hrefs = propertyNode.putArray("hrefs");
         for (String href : prop.getHrefs()) {
           hrefs.add(href);
         }
-        p.put("hrefs", hrefs);
       } else if (prop.getHrefs().size() == 1) {
-        p.put("hrefs", factory.textNode(prop.getHrefs().get(0)));
+        propertyNode.put("hrefs", prop.getHrefs().get(0));
       }
       if(prop.getMetadata().getAssociations().size() > 0)
-    	  p.putPOJO("associations", prop.getMetadata().getAssociations());
+    	  propertyNode.putPOJO("associations", prop.getMetadata().getAssociations());
       
       Metadata propertyMetadata = prop.getMetadata();
       Map<String, List<String>> propMetaItems = propertyMetadata.getItems();
       
       for(String key : propMetaItems.keySet()){
     	  if(prop.getMetadata().getAll(key).size() > 1){
-    		  ArrayNode metadataElements = factory.arrayNode();
+    		  ArrayNode metadataElements = propertyNode.putArray(key);
 	          for (String e : prop.getMetadata().getAll(key)) {
 	          	metadataElements.add(e);
 	          }
-	          p.put(key, metadataElements);
     	  }else{
-    		  p.put(key, prop.getMetadata().get(key));
-    	  }
-    		  
-      }
-      
-      properties.add(p);
+    		  propertyNode.put(key, prop.getMetadata().get(key));
+    	  }    		  
+      }      
+      propertiesNode.add(propertyNode);
     }
-    td.put("properties", properties);
 
-    ArrayNode actions = factory.arrayNode();
+    ArrayNode actionsNode = thingNode.putArray("actions");
     for (Action action : thing.getActions()) {
-      ObjectNode actionNode = factory.objectNode();
+      ObjectNode actionNode = actionsNode.objectNode();
       actionNode.put("name", action.getName());
 
       if (!action.getInputType().isEmpty()) {
-        ObjectNode in = factory.objectNode();
-        in.put("valueType", action.getInputType());
-        if(action.getDefaultParameters() != null){
-        	in.put("defaults", action.getDefaultParameters());
-        }
-        actionNode.put("inputData", in);
+      	JsonNode inputTypeNode = mapper.readTree(action.getInputType());
+        actionNode.set("inputData", inputTypeNode);
       }
 
       if (!action.getOutputType().isEmpty()) {
-        ObjectNode out = factory.objectNode();
-        out.put("valueType", action.getOutputType());
-        actionNode.put("outputData", out);
+    	JsonNode outputTypeNode = mapper.readTree(action.getOutputType());
+        actionNode.set("outputData", outputTypeNode);
       }
 
       if (action.getHrefs().size() > 1) {
-        ArrayNode hrefs = factory.arrayNode();
+        ArrayNode hrefs = actionNode.putArray("hrefs");
         for (String href : action.getHrefs()) {
           hrefs.add(href);
         }
-        actionNode.put("hrefs", hrefs);
       } else if (action.getHrefs().size() == 1) {
-        actionNode.put("hrefs", factory.textNode(action.getHrefs().get(0)));
+        actionNode.put("hrefs", action.getHrefs().get(0));
       }
       if(action.getMetadata().getAssociations().size() > 0)
     	  actionNode.putPOJO("associations", action.getMetadata().getAssociations());
-      
+  
       Metadata actionMetadata = action.getMetadata();
       Map<String, List<String>> actionMetaItems = actionMetadata.getItems();
-      
       for(String key : actionMetaItems.keySet()){
-      	ArrayNode metadataElement = factory.arrayNode();
-          for (String e : action.getMetadata().getAll(key)) {
-          	metadataElement.add(e);
-          }
-          actionNode.put(key, metadataElement);
-      }
-      
-      actions.add(actionNode);
+    	  if(action.getMetadata().getAll(key).size() > 1){
+    		  ArrayNode metadataElements = actionNode.putArray(key);
+	          for (String e : action.getMetadata().getAll(key)) {
+	          	metadataElements.add(e);
+	          }
+    	  }else{
+    		  actionNode.put(key, action.getMetadata().get(key));
+    	  }    		  
+      }      
+      actionsNode.add(actionNode);
     }
-    td.put("actions", actions);
 
     ArrayNode events = factory.arrayNode();
     for (Event event : thing.getEvents()) {
@@ -317,18 +300,12 @@ public class ThingDescriptionParser
       eventNode.put("name", event.getName());
 
       if (!event.getInputType().isEmpty()) {
-          ObjectNode in = factory.objectNode();
-          in.put("valueType", event.getInputType());
-          if(event.getDefaultParameters() != null){
-          	in.put("defaults", event.getDefaultParameters());
-          }
-          eventNode.put("inputData", in);
+        	JsonNode inputTypeNode = mapper.readTree(event.getInputType());
+            eventNode.set("inputData", inputTypeNode);
         }
       
       if (!event.getOutputType().isEmpty()) {
-          ObjectNode out = factory.objectNode();
-          out.put("valueType", event.getOutputType());
-          eventNode.put("outputData", out);
+        	JsonNode inputTypeNode = mapper.readTree(event.getInputType());
         }      
 
       if (event.getHrefs().size() > 1) {
@@ -343,9 +320,9 @@ public class ThingDescriptionParser
 
       events.add(eventNode);
     }
-    td.put("events", events);
+    thingNode.put("events", events);
 
-    return td;
+    return thingNode;
   }
 
   /**
@@ -399,32 +376,34 @@ public class ThingDescriptionParser
           break;
           
         case "properties":
-          for (JsonNode prop : td.get("properties")) {
-            Property.Builder builder = Property.getBuilder(prop.get("name").asText());
-            Iterator<String> it = prop.fieldNames();
+          for (JsonNode propertyNode : td.get("properties")) {
+            Property.Builder builder = Property.getBuilder(propertyNode.get("name").asText());
+            Iterator<String> it = propertyNode.fieldNames();
             HashMap<String, JsonNode> metadataNodes = new HashMap<>();
             while (it.hasNext()) {
             	String s = it.next();
               switch (s) {
                 case "valueType":
-                  builder.setXsdType(prop.get("valueType").toString());
+                  builder.setXsdType(propertyNode.get("valueType").toString());
                   break;
                 case "writable":
-                  builder.setWriteable(prop.get("writable").asBoolean());
+                  builder.setWriteable(propertyNode.get("writable").asBoolean());
                   break;
                 case "observable":
-                    builder.setObservable(prop.get("observable").asBoolean());
+                    builder.setObservable(propertyNode.get("observable").asBoolean());
                     break;                  
                 case "hrefs":
-                  builder.setHrefs(stringOrArray(prop.get("hrefs")));
+                  builder.setHrefs(stringOrArray(propertyNode.get("hrefs")));
                   break;
                 default:
-                	metadataNodes.put(s,prop.get(s));
+                	metadataNodes.put(s,propertyNode.get(s));
               }
             }
             Property property = builder.build();
             for(String key : metadataNodes.keySet()){
-            	property.getMetadata().add(key, metadataNodes.get(key).asText());
+            	List<String> stringOrArray = stringOrArray( metadataNodes.get(key));
+        		for(String m : stringOrArray)
+        			property.getMetadata().add(key, m);
             }
             thing.addProperty(property);
           }
@@ -439,12 +418,12 @@ public class ThingDescriptionParser
               String s = it.next();
               switch (s) {
                 case "inputData":
-                  builder.setInputType(action.get("inputData").get("valueType").asText());
-                  if(action.get("inputData").has("defaults"))
-                	  builder.setInputDefaults(action.get("inputData").get("defaults").asText());
+                  builder.setInputType(action.get("inputData").toString());
+                  //if(action.get("inputData").has("defaults"))
+                //	  builder.setInputDefaults(action.get("inputData").get("defaults").toString());
                   break;
                 case "outputData":
-                  builder.setOutputType(action.get("outputData").get("valueType").asText());
+                  builder.setOutputType(action.get("outputData").toString());
                   break;
                 case "hrefs":
                   builder.setHrefs(stringOrArray(action.get("hrefs")));
@@ -455,7 +434,9 @@ public class ThingDescriptionParser
             }
             Action a = builder.build();
             for(String key : metadataNodes.keySet()){
-            	a.getMetadata().add(key, metadataNodes.get(key).asText());
+            	List<String> stringOrArray = stringOrArray( metadataNodes.get(key));
+        		for(String m : stringOrArray)
+        			a.getMetadata().add(key, m);
             }
             thing.addAction(a);
           }
@@ -470,12 +451,12 @@ public class ThingDescriptionParser
                   String s = it.next();
                   switch (s) {
                   case "inputData":
-                      builder.setInputType(event.get("inputData").get("valueType").asText());
-                      if(event.get("inputData").has("defaults"))
-                    	  builder.setInputDefaults(event.get("inputData").get("defaults").toString());
+                      builder.setInputType(event.get("inputData").toString());
+                      //if(event.get("inputData").has("defaults"))
+                    	//  builder.setInputDefaults(event.get("inputData").get("defaults").toString());
                       break;
                     case "outputData":
-                      builder.setOutputType(event.get("outputData").get("valueType").asText());
+                      builder.setOutputType(event.get("outputData").toString());
                       break;
                     case "hrefs":
                       builder.setHrefs(stringOrArray(event.get("hrefs")));
@@ -486,7 +467,9 @@ public class ThingDescriptionParser
                 }
                 Event e = builder.buildEvent();
                 for(String key : metadataNodes.keySet()){
-                	e.getMetadata().add(key, metadataNodes.get(key).asText());
+                	List<String> stringOrArray = stringOrArray( metadataNodes.get(key));
+            		for(String m : stringOrArray)
+            			e.getMetadata().add(key, m);
                 }                
                 thing.addEvent(e);
               }
