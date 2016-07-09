@@ -49,9 +49,15 @@ import java.util.Map;
  *  */
 public class TDRepository {
 	
-	public static final String ETH_URI = "vs0.inf.ethz.ch:8080";
+	public static final String ETH_URI = "http://vs0.inf.ethz.ch:8080";
 
 	private String repository_uri;
+	
+	private String registrationHandle;
+
+	public  TDRepository() {
+		this.repository_uri = ETH_URI;
+	}
 
 	/** Constructer set up the endpoint address of the TD repository
 	 * @param repository_uri Repository Uri (+Port if needed)
@@ -71,7 +77,7 @@ public class TDRepository {
 		//String search_without_space = search.replace(" ", " %20");
 		search = URLEncoder.encode(search, "UTF-8");
 		
-		URL myURL = new URL("http://" + repository_uri + "/td?query=" + search);
+		URL myURL = new URL(repository_uri + "/td?query=" + search);
 		HttpURLConnection myURLConnection = (HttpURLConnection)myURL.openConnection();
 		myURLConnection.setRequestMethod("GET");
 		myURLConnection.setRequestProperty("Content-Type", "application/ld+json");
@@ -98,7 +104,7 @@ public class TDRepository {
 		
 		search = URLEncoder.encode("?s <http://www.w3c.org/wot/td#name> \"" + search + "\"", "UTF-8");
 		
-		URL myURL = new URL("http://" + repository_uri + "/td?query=" + search);
+		URL myURL = new URL(repository_uri + "/td?query=" + search);
 		HttpURLConnection myURLConnection = (HttpURLConnection)myURL.openConnection();
 		myURLConnection.setRequestMethod("GET");
 		myURLConnection.setRequestProperty("Content-Type", "application/ld+json");
@@ -131,8 +137,8 @@ public class TDRepository {
 	 * @return key of entry in repository
 	 * @throws Exception in case of error
 	 */
-	public String addTD(byte[] content) throws Exception {
-		URL url = new URL("http://" + repository_uri  + "/td");
+	public String addTD(String endpoint, byte[] content) throws Exception {
+		URL url = new URL(repository_uri  + "/td?ep="+endpoint+"&lt=3600");
 		HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
 		httpCon.setDoOutput(true);
 		httpCon.setRequestProperty("content-type", "application/ld+json");
@@ -165,6 +171,8 @@ public class TDRepository {
 			}
 		}
 		
+		registrationHandle = key;
+		
 		return key;
 	}
 	
@@ -175,8 +183,8 @@ public class TDRepository {
 	 * @param content JSON-LD
 	 * @throws Exception in case of error
 	 */
-	public void updateTD(String key, byte[] content) throws Exception {
-		URL url = new URL("http://" + repository_uri + key);
+	public void updateTD(byte[] content) throws Exception {
+		URL url = new URL(repository_uri + registrationHandle);
 		HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
 		httpCon.setDoOutput(true);
 		httpCon.setRequestProperty("content-type", "application/ld+json");
@@ -211,7 +219,7 @@ public class TDRepository {
 	 * @throws Exception in case of error
 	 */
 	public void deleteTD(String key) throws Exception {
-		URL url = new URL("http://" + repository_uri + key);
+		URL url = new URL(repository_uri + key);
 		HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
 		httpCon.setDoOutput(true);
 		httpCon.setRequestProperty("content-type", "application/ld+json");
