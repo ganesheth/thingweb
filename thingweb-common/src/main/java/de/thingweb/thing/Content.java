@@ -32,7 +32,7 @@ public class Content {
 	private String locationPath;
 	private ResponseType responseType = ResponseType.UNDEFINED;
 	
-	public enum ResponseType {CREATED, READ, UPDATED, DELETED, SUBSCRIBED, ERROR, UNDEFINED};
+	public enum ResponseType {CREATED, READ, UPDATED, DELETED, SUBSCRIBED, SERVER_ERROR, INVALID_REQUEST, UNDEFINED};
 	
 	public Content(byte[] content, MediaType mediaType) {
 		this.content = content;

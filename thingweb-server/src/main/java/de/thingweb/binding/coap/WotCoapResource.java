@@ -191,8 +191,10 @@ public class WotCoapResource extends CoapResource implements  Observer{
         	
         	if(response.getResponseType() == Content.ResponseType.UPDATED)
         		responseCode = CoAP.ResponseCode.CHANGED;
-        	else if(response.getResponseType() == Content.ResponseType.ERROR)
-        		responseCode = CoAP.ResponseCode.NOT_ACCEPTABLE;
+        	else if(response.getResponseType() == Content.ResponseType.INVALID_REQUEST)
+        		responseCode = CoAP.ResponseCode.BAD_REQUEST;
+        	else if(response.getResponseType() == Content.ResponseType.SERVER_ERROR)
+        		responseCode = CoAP.ResponseCode.INTERNAL_SERVER_ERROR;
         	
         	exchange.respond(responseCode, response.getContent(), contentFormat);
         } catch (UnsupportedOperationException e) {
