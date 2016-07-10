@@ -52,8 +52,10 @@ public class TDRepository {
 	public static final String ETH_URI = "http://vs0.inf.ethz.ch:8080";
 
 	private String repository_uri;
-	
+	private String endpointName;
+	private long lifetime = 3600;
 	private String registrationHandle;
+
 
 	public  TDRepository() {
 		this.repository_uri = ETH_URI;
@@ -137,8 +139,12 @@ public class TDRepository {
 	 * @return key of entry in repository
 	 * @throws Exception in case of error
 	 */
-	public String addTD(String endpoint, byte[] content) throws Exception {
-		URL url = new URL(repository_uri  + "/td?ep="+endpoint+"&lt=3600");
+	public String addTD(String endpoint, long lifetime, byte[] content) throws Exception {
+		
+		this.lifetime = lifetime;
+		this.endpointName = endpoint;
+		
+		URL url = new URL(repository_uri  + "/td?ep="+endpoint+"&lt=" + lifetime);
 		HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
 		httpCon.setDoOutput(true);
 		httpCon.setRequestProperty("content-type", "application/ld+json");
@@ -184,7 +190,7 @@ public class TDRepository {
 	 * @throws Exception in case of error
 	 */
 	public void updateTD(byte[] content) throws Exception {
-		URL url = new URL(repository_uri + registrationHandle);
+		URL url = new URL(repository_uri + registrationHandle + "?lt="+lifetime);
 		HttpURLConnection httpCon = (HttpURLConnection) url.openConnection();
 		httpCon.setDoOutput(true);
 		httpCon.setRequestProperty("content-type", "application/ld+json");
@@ -192,14 +198,6 @@ public class TDRepository {
 		OutputStream out = httpCon.getOutputStream();
 		out.write(content);
 		out.close();
-		
-		
-//		InputStream is = httpCon.getInputStream();
-//		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//		int b;
-//		while ((b = is.read()) != -1) {
-//			baos.write(b);
-//		}
 		
 		int responseCode = httpCon.getResponseCode();
 
