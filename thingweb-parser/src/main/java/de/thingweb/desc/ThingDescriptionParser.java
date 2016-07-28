@@ -394,16 +394,20 @@ public class ThingDescriptionParser
                     break;                  
                 case "hrefs":
                   builder.setHrefs(stringOrArray(propertyNode.get("hrefs")));
-                  break;
+                  break;                  
                 default:
                 	metadataNodes.put(s,propertyNode.get(s));
               }
             }
             Property property = builder.build();
             for(String key : metadataNodes.keySet()){
-            	List<String> stringOrArray = stringOrArray( metadataNodes.get(key));
-        		for(String m : stringOrArray)
-        			property.getMetadata().add(key, m);
+            	if(!(metadataNodes.get(key).isArray() || metadataNodes.get(key).isTextual())){
+            		property.getMetadata().add(key, metadataNodes.get(key).toString());
+            	}else{            	
+	            	List<String> stringOrArray = stringOrArray( metadataNodes.get(key));
+	        		for(String m : stringOrArray)
+	        			property.getMetadata().add(key, m);
+            	}
             }
             thing.addProperty(property);
           }

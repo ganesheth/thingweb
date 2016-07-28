@@ -119,6 +119,8 @@ public class Property extends Interaction {
 		private String xsdType = "xsd:string";
 		private String propertyType = null;
 		private List<String> hrefs = new ArrayList<>();
+		private double min = Double.NaN;
+		private double max = Double.NaN;
 
 		public Builder(String name) {
 			this.name = name;
@@ -155,6 +157,16 @@ public class Property extends Interaction {
 		
 		public Property.Builder setObservable(boolean isObservable) {
 			this.isObservable = isObservable;
+			return this;
+		}
+		
+		public Property.Builder setMin(double min) {
+			this.min = min;
+			return this;
+		}
+		
+		public Property.Builder setMax(double max) {
+			this.max = max;
 			return this;
 		}
 
