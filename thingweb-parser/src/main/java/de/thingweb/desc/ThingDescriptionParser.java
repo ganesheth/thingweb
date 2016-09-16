@@ -186,8 +186,8 @@ public class ThingDescriptionParser
     
     List<String> additionalContexts = thing.getMetadata().getAll(ThingMetadata.METADATA_ELEMENT_CONTEXT);
 
-    //if(!additionalContexts.contains(WOT_TD_CONTEXT))
-    //	contextsNode.add(new TextNode(WOT_TD_CONTEXT));
+    if(!additionalContexts.contains(WOT_TD_CONTEXT))
+    	contextsNode.add(new TextNode(WOT_TD_CONTEXT));
     for(String context : additionalContexts){
     	try{    		
     		JsonNode contextNode = mapper.readTree(context);
@@ -223,8 +223,12 @@ public class ThingDescriptionParser
       propertyNode.put("writable", prop.isWritable());
       if(prop.isObservable())
     	  propertyNode.put("observable", prop.isObservable());
-      JsonNode valueTypeNode = mapper.readTree( prop.getValueType());
-      propertyNode.set("valueType", valueTypeNode);
+      try {
+		JsonNode valueTypeNode = mapper.readTree( prop.getValueType());
+		  propertyNode.set("valueType", valueTypeNode);
+	} catch (Exception e1) {
+		 propertyNode.put("valueType", prop.getValueType());
+	}
 
       if (prop.getHrefs().size() > 1) {
         ArrayNode hrefs = propertyNode.putArray("hrefs");
